@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url("https://geist.vercel.app/font.css");
+
+:root {
+    --font-geist-sans: "Geist", sans-serif;
+    --font-geist-mono: "Geist Mono", monospace;
+    color-scheme: light; 
+}
+
+body {
+    font-family: var(--font-geist-sans); 
+    @apply bg-neutral-50 text-neutral-900; 
+}
