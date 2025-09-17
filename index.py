@@ -3,7 +3,6 @@ from flask_cors import CORS
 import io, os, sys, tempfile, shutil, uuid, subprocess
 
 app = Flask(__name__)
-# Allow CORS for Vercel + local
 CORS(app, resources={r"/*": {"origins": [
     "https://ppt-crafter.vercel.app",
     "http://localhost:3000"
@@ -11,17 +10,17 @@ CORS(app, resources={r"/*": {"origins": [
 
 DEFAULT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "default_template.pptx")
 
-# --- Health check ---
+# --- Health ---
 @app.route("/", methods=["GET"])
 @app.route("/api", methods=["GET"])
 def health():
     return {"status": "ok"}
 
-# --- Handle POST + OPTIONS ---
+# --- Handle POST + OPTIONS on both "/" and "/api" ---
 @app.route("/", methods=["POST", "OPTIONS"])
 @app.route("/api", methods=["POST", "OPTIONS"])
 def generate():
-    # Handle preflight
+    # ✅ Handle preflight
     if request.method == "OPTIONS":
         resp = make_response()
         resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
