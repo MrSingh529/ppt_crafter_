@@ -1,18 +1,22 @@
 from flask import Flask, request, send_file
+from flask_cors import CORS
 import io, os, sys, tempfile, shutil, uuid, subprocess
 
 app = Flask(__name__)
+# Allow CORS for your Vercel frontend
+CORS(app, resources={r"/*": {"origins": ["https://ppt-crafter.vercel.app", "http://localhost:3000"]}})
 
 DEFAULT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "default_template.pptx")
 
-# --- Health: match "/" and "/api" (and optional trailing slash) ---
+# --- Health check ---
 @app.get("/")
 @app.get("/api")
 def health():
     return {"status": "ok"}
 
-# --- POST: match "/" and "/api" (works for both ways Vercel mounts the path) ---
+# --- Generate PPT ---
 @app.route("/", methods=["POST"])
+@app.route("/api", methods=["POST"])
 def generate():
     if "excel" not in request.files:
         return ("Missing file: need 'excel'", 400)
