@@ -2,9 +2,5 @@ services:
   - type: web
     name: ppt-crafter
     env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn index:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.14
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn index:app"
