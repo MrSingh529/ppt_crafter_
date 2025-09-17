@@ -1,23 +1,34 @@
-from flask import Flask, request, send_file
+from flask import Flask, request, send_file, make_response
 from flask_cors import CORS
 import io, os, sys, tempfile, shutil, uuid, subprocess
 
 app = Flask(__name__)
-# Allow CORS for your Vercel frontend
-CORS(app, resources={r"/*": {"origins": ["https://ppt-crafter.vercel.app", "http://localhost:3000"]}})
+# Allow CORS for Vercel + local
+CORS(app, resources={r"/*": {"origins": [
+    "https://ppt-crafter.vercel.app",
+    "http://localhost:3000"
+]}}, supports_credentials=True)
 
 DEFAULT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "default_template.pptx")
 
 # --- Health check ---
-@app.get("/")
-@app.get("/api")
+@app.route("/", methods=["GET"])
+@app.route("/api", methods=["GET"])
 def health():
     return {"status": "ok"}
 
-# --- Generate PPT ---
-@app.route("/", methods=["POST"])
-@app.route("/api", methods=["POST"])
+# --- Handle POST + OPTIONS ---
+@app.route("/", methods=["POST", "OPTIONS"])
+@app.route("/api", methods=["POST", "OPTIONS"])
 def generate():
+    # Handle preflight
+    if request.method == "OPTIONS":
+        resp = make_response()
+        resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return resp, 200
+
     if "excel" not in request.files:
         return ("Missing file: need 'excel'", 400)
 
@@ -65,12 +76,18 @@ def generate():
 
         with open(out_path, "rb") as f:
             data = f.read()
-        return send_file(
+
+        resp = send_file(
             io.BytesIO(data),
             mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation",
             as_attachment=True,
             download_name="updated_poc.pptx",
         )
+        resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        return resp
+
     finally:
-        try: shutil.rmtree(work)
-        except Exception: pass
+        try:
+            shutil.rmtree(work)
+        except Exception:
+            pass
