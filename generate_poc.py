@@ -2538,7 +2538,13 @@ def main(excel_file, ppt_template, output_ppt):
     print("Saved:", output_ppt)
 
 if __name__ == "__main__":
-    excel_file = "Datasheet-HS.xlsx"
-    ppt_template = "test_ppt.pptx"
-    output_ppt = "updated_presentation.pptx"
+    import sys
+    if len(sys.argv) == 4:
+        excel_file, ppt_template, output_ppt = sys.argv[1], sys.argv[2], sys.argv[3]
+    else:
+        # fallback for local testing
+        excel_file = "Datasheet-HS.xlsx"
+        ppt_template = "default_template.pptx"   # <- apne actual template ka naam rakho
+        output_ppt = "updated_presentation.pptx"
+
     main(excel_file, ppt_template, output_ppt)
