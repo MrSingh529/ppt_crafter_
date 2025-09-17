@@ -1,35 +1,32 @@
-from flask import Flask, request, send_file, make_response
-from flask_cors import CORS
 import io, os, sys, tempfile, shutil, uuid, subprocess
+from flask import Flask, request, send_file, jsonify, make_response
+from flask_cors import CORS
 
 app = Flask(__name__)
 
-# ✅ Allow CORS for Vercel + local dev
+# Allow CORS for Vercel + local
 CORS(app, resources={r"/*": {"origins": [
-    "https://ppt-crafter.vercel.app",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://ppt-crafter.vercel.app"
 ]}}, supports_credentials=True)
 
 DEFAULT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "default_template.pptx")
 
 # --- Health check ---
-@app.route("/", methods=["GET"])
-@app.route("/api", methods=["GET"])
-def health():
-    return {"status": "ok"}
+@app.get("/")
+def health_root():
+    return {"status": "ok", "message": "PPT Crafter API is running"}
 
-
-# --- Generate PPT (POST + OPTIONS) ---
-@app.route("/", methods=["POST", "OPTIONS"])
+# --- POST endpoint ---
 @app.route("/api", methods=["POST", "OPTIONS"])
 def generate():
-    # ✅ Handle preflight
+    # Handle CORS preflight
     if request.method == "OPTIONS":
-        resp = make_response()
-        resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
-        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        return resp, 200
+        response = make_response()
+        response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        return response, 200
 
     if "excel" not in request.files:
         return ("Missing file: need 'excel'", 400)
@@ -39,7 +36,7 @@ def generate():
 
     if not excel.filename.lower().endswith((".xlsx", ".xls")):
         return ("Excel must be .xlsx or .xls", 400)
-    if ppt and ppt.filename and (not ppt.filename.lower().endswith(".pptx")):
+    if ppt and ppt.filename and not ppt.filename.lower().endswith(".pptx"):
         return ("Template must be .pptx", 400)
 
     if (not ppt or not ppt.filename) and not os.path.exists(DEFAULT_TEMPLATE_PATH):
@@ -79,23 +76,18 @@ def generate():
         with open(out_path, "rb") as f:
             data = f.read()
 
-        resp = send_file(
+        response = send_file(
             io.BytesIO(data),
             mimetype="application/vnd.openxmlformats-officedocument.presentationml.presentation",
             as_attachment=True,
             download_name="updated_poc.pptx",
         )
-        resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
-        return resp
+        # ✅ CORS headers in final response
+        response.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+        return response
 
     finally:
         try:
             shutil.rmtree(work)
         except Exception:
             pass
-
-
-# ✅ Debug route to confirm headers
-@app.route("/debug", methods=["GET"])
-def debug():
-    return {"headers": dict(request.headers)}
