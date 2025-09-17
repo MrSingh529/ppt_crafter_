@@ -10,7 +10,7 @@ CORS(app, resources={r"/*": {"origins": [
     "https://ppt-crafter.vercel.app"
 ]}}, supports_credentials=True)
 
-DEFAULT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "default_template.pptx")
+DEFAULT_TEMPLATE_PATH = os.path.join(os.path.dirname(__file__), "api", "default_template.pptx")
 
 # --- Health check ---
 @app.get("/")
