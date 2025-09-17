@@ -1,9 +1,0 @@
-Script failed
-STDOUT:
-
-
-STDERR:
-Traceback (most recent call last):
-  File "/tmp/imarc_ca98c76a926b4e0e9c4944e0bb32db0e/generate_poc.py", line 12, in <module>
-    import google.generativeai as genai
-ModuleNotFoundError: No module named 'google'
