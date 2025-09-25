@@ -1,6 +1,7 @@
 import io, os, sys, tempfile, shutil, uuid, subprocess, traceback
 from flask import Flask, request, send_file, make_response
 from flask_cors import CORS
+import subprocess
 
 app = Flask(__name__)
 
@@ -66,28 +67,47 @@ def generate():
             shutil.copyfile(script_src, script_dst)
             print("=== DEBUG: Script copied to work dir:", script_dst)
 
-            proc = subprocess.run(
-                [
-                    sys.executable,
-                    script_dst,
-                    os.path.basename(excel_path),   # "datasheet_imarc.xlsx"
-                    os.path.basename(ppt_path),     # "template.pptx" (copied or uploaded)
-                    "updated_poc.pptx",             # output filename
-                ],
-                cwd=work,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=180,  # give a bit more time if AI / heavy processing
-            )
+            try:
+                proc = subprocess.run(
+                    [
+                        sys.executable,
+                        script_dst,
+                        os.path.basename(excel_path),
+                        os.path.basename(ppt_path),
+                        "updated_poc.pptx",
+                    ],
+                    cwd=work,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    timeout=240,  # must be less than gunicorn worker timeout
+                )
+            except subprocess.TimeoutExpired as te:
+                # Child took too long — return a controlled error (with CORS header)
+                msg = f"Script timeout (after {te.timeout}s)."
+                print("=== DEBUG: Subprocess timeout ===", te)
+                response = (f"{msg}\n\nSTDOUT:\n{te.stdout}\n\nSTDERR:\n{te.stderr}", 500)
+                # ensure CORS header on error
+                resp = make_response(response[0], 500)
+                resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+                return resp
+            except Exception as e:
+                print("=== DEBUG: Subprocess run failed ===", e)
+                resp = make_response(f"Failed to run script: {e}", 500)
+                resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+                return resp
 
+            # regular logging of child output
             print("=== DEBUG: Subprocess finished ===")
             print("Return Code:", proc.returncode)
             print("STDOUT:\n", proc.stdout)
             print("STDERR:\n", proc.stderr)
 
             if proc.returncode != 0:
-                return (f"Script failed\nSTDOUT:\n{proc.stdout}\n\nSTDERR:\n{proc.stderr}", 500)
+                resp_text = f"Script failed\nSTDOUT:\n{proc.stdout}\n\nSTDERR:\n{proc.stderr}"
+                resp = make_response(resp_text, 500)
+                resp.headers["Access-Control-Allow-Origin"] = request.headers.get("Origin", "*")
+                return resp
 
             out_path = os.path.join(work, "updated_poc.pptx")
             if not os.path.exists(out_path):

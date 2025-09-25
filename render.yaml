@@ -3,4 +3,4 @@ services:
     name: ppt-crafter
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn index:app
+    startCommand: gunicorn index:app -w 1 -k sync -t 400
