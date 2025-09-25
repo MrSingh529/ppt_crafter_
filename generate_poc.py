@@ -2544,7 +2544,7 @@ if __name__ == "__main__":
     else:
         # fallback for local testing
         excel_file = "Datasheet-HS.xlsx"
-        ppt_template = "default_template.pptx"   # <- apne actual template ka naam rakho
+        ppt_template = "default_template.pptx"
         output_ppt = "updated_presentation.pptx"
 
     main(excel_file, ppt_template, output_ppt)

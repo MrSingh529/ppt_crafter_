@@ -67,12 +67,18 @@ def generate():
             print("=== DEBUG: Script copied to work dir:", script_dst)
 
             proc = subprocess.run(
-                [sys.executable, script_dst],
+                [
+                    sys.executable,
+                    script_dst,
+                    os.path.basename(excel_path),   # "datasheet_imarc.xlsx"
+                    os.path.basename(ppt_path),     # "template.pptx" (copied or uploaded)
+                    "updated_poc.pptx",             # output filename
+                ],
                 cwd=work,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                timeout=120,
+                timeout=180,  # give a bit more time if AI / heavy processing
             )
 
             print("=== DEBUG: Subprocess finished ===")
