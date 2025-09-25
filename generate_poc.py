@@ -10,9 +10,16 @@ from pptx.chart.data import CategoryChartData
 from pptx.enum.chart import XL_CHART_TYPE
 from pptx.util import Emu
 import google.generativeai as genai
+import os
 
 # setup Gemini
-genai.configure(api_key="AIzaSyD4LOjhJtiC2mdRZJYGSa5iavCBRTZfTKU")
+GENAI_KEY = os.environ.get("GENAI_API_KEY")
+if GENAI_KEY:
+    genai.configure(api_key=GENAI_KEY)
+else:
+    # If you don't have an AI key in the environment, you can still run without AI
+    # but parts of the script that call AI will likely throw or return empty strings.
+    print("⚠️ GENAI_API_KEY not set. AI features will fail if used.")
 
 # --------------- helpers ---------------
 
